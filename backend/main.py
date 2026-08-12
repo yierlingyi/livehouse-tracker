@@ -28,6 +28,7 @@ from typing import AsyncGenerator, Optional
 
 import asyncpg
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.api.full import router as full_router
@@ -109,6 +110,15 @@ async def get_replica_db() -> AsyncGenerator[asyncpg.Connection, None]:
 
 
 app = FastAPI(title="Band Live API", version="4.4.0", lifespan=lifespan)
+
+# --- CORS（H5 开发期跨域；生产由 nginx 反代同源） ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:8080"],
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 # --- 错误处理（HTTPException 错误码 → 契约 Error JSON） ---
 register_error_handlers(app)

@@ -44,6 +44,11 @@ export async function firstSync(city, onProgress) {
 
   // 1. /full 第一页
   const firstPage = await fetchFullFirstPage(city)
+  if (!firstPage || typeof firstPage !== 'object' || !firstPage.scope || !firstPage.scope.city) {
+    const e = new Error('服务器返回数据异常，请稍后重试')
+    e.code = 'BAD_FULL_RESPONSE'
+    throw e
+  }
   const { scope, snapshot_cursor } = firstPage
 
   // 2. 保存 scope 与 snapshot_cursor

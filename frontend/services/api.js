@@ -6,17 +6,14 @@
  * 网络失败 / 超时统一归一为 { code: 'NETWORK_ERROR', network: true }。
  */
 
-// API 基地址。HBuilderX / uni-app 使用 VUE_APP_API_BASE 环境变量；
-// 未配置时使用同源（H5 由部署侧反代 /api，小程序配置域名白名单）。
-// 在 HBuilderX 中：项目根目录创建 .env 文件，写入 VUE_APP_API_BASE=http://127.0.0.1:8000
+// API 基地址。HBuilderX Vue3 使用 Vite 编译器，读取 import.meta.env.VITE_API_BASE。
+// 未配置时回退同源（生产由 nginx 反代 /api）。
 const API_BASE = (() => {
   try {
-    // HBuilderX CLI / uni-app 方式
-    if (typeof process !== 'undefined' && process.env && process.env.VUE_APP_API_BASE) {
-      return String(process.env.VUE_APP_API_BASE).replace(/\/+$/, '')
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE) {
+      return String(import.meta.env.VITE_API_BASE).replace(/\/+$/, '')
     }
   } catch (e) { /* ignore */ }
-  // 也可在 manifest.json 的 h5.router.base 或源码中直接修改此处
   return ''
 })()
 const DEFAULT_TIMEOUT = 15000
@@ -57,10 +54,19 @@ function request(path, data) {
       method: 'GET',
       timeout: DEFAULT_TIMEOUT,
       success: (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
+        const status = res && res.statusCode
+        // statusCode === 0 表示跨域/网络被拦截，按网络错误处理
+        if (status === 0 || status == null) {
+          const e = new Error('NETWORK_ERROR')
+          e.code = 'NETWORK_ERROR'
+          e.network = true
+          reject(e)
+          return
+        }
+        if (status >= 200 && status < 300) {
           resolve(res.data)
         } else {
-          reject(normalizeHttpError(res.data, res.statusCode))
+          reject(normalizeHttpError(res.data, status))
         }
       },
       fail: (err) => {
