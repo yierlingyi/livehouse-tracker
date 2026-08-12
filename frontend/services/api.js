@@ -6,21 +6,19 @@
  * 网络失败 / 超时统一归一为 { code: 'NETWORK_ERROR', network: true }。
  */
 
-// API 基础地址。优先取 Vite 环境变量 VITE_API_BASE，其次 VUE_APP_API_BASE；
-// 均未配置时使用同源（H5 由部署侧反代 /api）。
-function resolveApiBase() {
+// API 基地址。HBuilderX / uni-app 使用 VUE_APP_API_BASE 环境变量；
+// 未配置时使用同源（H5 由部署侧反代 /api，小程序配置域名白名单）。
+// 在 HBuilderX 中：项目根目录创建 .env 文件，写入 VUE_APP_API_BASE=http://127.0.0.1:8000
+const API_BASE = (() => {
   try {
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE) {
-      return String(import.meta.env.VITE_API_BASE).replace(/\/+$/, '')
+    // HBuilderX CLI / uni-app 方式
+    if (typeof process !== 'undefined' && process.env && process.env.VUE_APP_API_BASE) {
+      return String(process.env.VUE_APP_API_BASE).replace(/\/+$/, '')
     }
   } catch (e) { /* ignore */ }
-  if (typeof process !== 'undefined' && process.env && process.env.VUE_APP_API_BASE) {
-    return String(process.env.VUE_APP_API_BASE).replace(/\/+$/, '')
-  }
+  // 也可在 manifest.json 的 h5.router.base 或源码中直接修改此处
   return ''
-}
-
-const API_BASE = resolveApiBase()
+})()
 const DEFAULT_TIMEOUT = 15000
 
 // V4.4 §14 错误码 → 客户端动作
