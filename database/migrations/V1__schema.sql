@@ -1,3 +1,6 @@
+\encoding UTF8
+SET client_encoding = 'UTF8';
+
 -- V1__schema.sql — Contract baseline from V4.4 §4-8
 -- Completed by Agent A: dependency tables (users/bands), FK backfill,
 -- fn_update_timestamp() trigger, safe_update_live_bands() SECURITY DEFINER

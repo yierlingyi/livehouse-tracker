@@ -1,3 +1,6 @@
+\encoding UTF8
+SET client_encoding = 'UTF8';
+
 -- V2__permissions.sql — Role-level object permissions (V4.4 §7-8)
 -- Applied AFTER V1__schema.sql.
 --
@@ -49,10 +52,20 @@ REVOKE INSERT, UPDATE, DELETE ON public.sync_changes FROM api_role;
 REVOKE UPDATE ON public.sync_version_counter FROM api_role;
 
 -- ============================================================
--- api_role: 可以执行安全函数
+-- api_role: 可以执行安全函数（函数存在时才执行，兼容 V1 部分失败场景）
 -- ============================================================
-GRANT EXECUTE ON FUNCTION public.safe_update_live_bands(BIGINT, JSONB) TO api_role;
-REVOKE ALL ON FUNCTION public.safe_update_live_bands(BIGINT, JSONB) FROM PUBLIC;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc p
+        JOIN pg_catalog.pg_namespace n ON p.pronamespace = n.oid
+        WHERE n.nspname = 'public' AND p.proname = 'safe_update_live_bands'
+    ) THEN
+        EXECUTE 'GRANT EXECUTE ON FUNCTION public.safe_update_live_bands(BIGINT, JSONB) TO api_role';
+        EXECUTE 'REVOKE ALL ON FUNCTION public.safe_update_live_bands(BIGINT, JSONB) FROM PUBLIC';
+    END IF;
+END
+$$;
 
 -- ============================================================
 -- app_definer 只授予函数所需的最小表权限
@@ -76,7 +89,23 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO migration_role;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO migration_role;
 
 -- ============================================================
--- 将 SECURITY DEFINER 函数所有权转给 app_definer
+-- 将 SECURITY DEFINER 函数所有权转给 app_definer（幂等，函数存在时才执行）
 -- ============================================================
-ALTER FUNCTION public.safe_update_live_bands(BIGINT, JSONB) OWNER TO app_definer;
-ALTER FUNCTION public.fn_update_timestamp() OWNER TO app_definer;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc p
+        JOIN pg_catalog.pg_namespace n ON p.pronamespace = n.oid
+        WHERE n.nspname = 'public' AND p.proname = 'safe_update_live_bands'
+    ) THEN
+        EXECUTE 'ALTER FUNCTION public.safe_update_live_bands(BIGINT, JSONB) OWNER TO app_definer';
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc p
+        JOIN pg_catalog.pg_namespace n ON p.pronamespace = n.oid
+        WHERE n.nspname = 'public' AND p.proname = 'fn_update_timestamp'
+    ) THEN
+        EXECUTE 'ALTER FUNCTION public.fn_update_timestamp() OWNER TO app_definer';
+    END IF;
+END
+$$;
