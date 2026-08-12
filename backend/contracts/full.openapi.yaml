@@ -1,0 +1,96 @@
+openapi: "3.0.3"
+info:
+  title: /full API Contract
+  version: "1.0.0"
+  description: |
+    Contract from V4.4 §9. All agents MUST implement against this.
+    Deviations are spec violations.
+
+paths:
+  /api/v1/lives/full:
+    get:
+      summary: Full sync — paginated keyset scan
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 50
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 500
+            minimum: 1
+            maximum: 2000
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Signed keyset token from prior page. Omit for first page.
+      responses:
+        "200":
+          description: Page of lives
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, scope, snapshot_cursor, has_more]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "../contracts/shared.json#/definitions/Live"
+                  scope:
+                    type: object
+                    required: [city, scope_start_date, scope_end_date]
+                    properties:
+                      city: { type: string }
+                      scope_start_date: { type: string, format: date }
+                      scope_end_date: { type: string, format: date }
+                  snapshot_cursor:
+                    type: string
+                    description: Version at first-page snapshot time
+                  has_more:
+                    type: boolean
+                  next_token:
+                    type: string
+                    nullable: true
+                    description: Signed token for next page. null on last page.
+        "400":
+          description: INVALID_PAGE_TOKEN — token malformed or city mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
+        "409":
+          description: FULL_PAGE_TOKEN_EXPIRED — token TTL exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
+        "429":
+          description: RATE_LIMITED
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
+
+components:
+  schemas:
+    PageToken:
+      type: object
+      required: [v, city, scope_start_date, scope_end_date, snapshot_cursor, last_date, last_time, last_id, exp]
+      properties:
+        v: { type: integer, const: 1 }
+        city: { type: string }
+        scope_start_date: { type: string, format: date }
+        scope_end_date: { type: string, format: date }
+        snapshot_cursor: { type: string }
+        last_date: { type: string, format: date }
+        last_time: { type: string, format: partial-time }
+        last_id: { type: integer }
+        exp: { type: integer, format: unix-time }

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "Live": {
+      "type": "object",
+      "required": ["id", "livehouse_id", "live_date", "sort_start_time", "title", "city", "band_names", "status", "updated_at"],
+      "properties": {
+        "id": { "type": "integer" },
+        "livehouse_id": { "type": "integer" },
+        "live_date": { "type": "string", "format": "date" },
+        "start_time": { "type": "string", "format": "partial-time", "nullable": true },
+        "sort_start_time": { "type": "string", "format": "partial-time" },
+        "title": { "type": "string", "maxLength": 150 },
+        "ticket_price": { "type": "string", "nullable": true },
+        "ticket_url": { "type": "string", "nullable": true },
+        "poster_image_url": { "type": "string", "nullable": true },
+        "city": { "type": "string" },
+        "band_names": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["announced", "on_sale", "completed", "cancelled"] },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_CITY",
+            "INVALID_PAGE_TOKEN",
+            "INVALID_CURSOR",
+            "FULL_PAGE_TOKEN_EXPIRED",
+            "SYNC_CURSOR_EXPIRED",
+            "RATE_LIMITED",
+            "SYNC_INVARIANT_BROKEN"
+          ]
+        },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

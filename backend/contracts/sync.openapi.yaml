@@ -1,0 +1,93 @@
+openapi: "3.0.3"
+info:
+  title: /sync API Contract
+  version: "1.0.0"
+  description: |
+    Contract from V4.4 §10. All agents MUST implement against this.
+
+paths:
+  /api/v1/lives/sync:
+    get:
+      summary: Incremental sync — CDC replay
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 50
+        - name: scope_start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: scope_end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: since
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+          description: Client's current cursor (last processed version)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1000
+            minimum: 1
+            maximum: 5000
+      responses:
+        "200":
+          description: Batch of changes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, deletes, cursor, has_more]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "../contracts/shared.json#/definitions/Live"
+                  deletes:
+                    type: array
+                    items:
+                      type: integer
+                    description: Entity IDs to remove from client
+                  cursor:
+                    type: integer
+                    description: New cursor — max version in this batch
+                  has_more:
+                    type: boolean
+                    description: true if more changes remain after this batch
+        "400":
+          description: INVALID_CURSOR — since value malformed
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
+        "409":
+          description: SYNC_CURSOR_EXPIRED — since below retention floor
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
+        "429":
+          description: RATE_LIMITED
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
+        "500":
+          description: SYNC_INVARIANT_BROKEN
+          content:
+            application/json:
+              schema:
+                $ref: "../contracts/shared.json#/definitions/Error"
