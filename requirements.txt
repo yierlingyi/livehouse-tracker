@@ -1,20 +1,21 @@
 # ============================================================
 # Band Live API — 运行依赖（Python 3.9+）
 # 由 backend/ 下所有 .py 文件的实际 import 推导（排除纯标准库）。
+# 直接安装最新稳定版本
 # 安装：
 #   python -m venv .venv && source .venv/bin/activate
 #   pip install -r requirements.txt
 # ============================================================
 
 # ---- Web 框架与 ASGI 服务器 ----
-fastapi>=0.110.0          # backend/*.py / middleware 直接使用（APIRouter/FastAPI/Depends）
-uvicorn[standard]>=0.29.0 # 生产 ASGI 服务器（standard 含 uvloop/httptools 等 Linux 加速）
+fastapi                   # backend/*.py / middleware 直接使用（APIRouter/FastAPI/Depends）
+uvicorn[standard]         # 生产 ASGI 服务器（standard 含 uvloop/httptools 等 Linux 加速）
 
 # ---- 数据库驱动 ----
-asyncpg>=0.29.0           # backend/main.py 连接池 + 各 API service 查询
+asyncpg                   # backend/main.py 连接池 + 各 API service 查询
 
 # ---- 文件上传（UploadFile/File 依赖）----
-python-multipart>=0.0.9   # backend/api/upload.py
+python-multipart          # backend/api/upload.py
 
 # ---- 缓存 / 限流（可选，仅在配置 REDIS_URL 时使用）----
 redis                     # backend/services/cache.py、rate_limiter.py 惰性导入
