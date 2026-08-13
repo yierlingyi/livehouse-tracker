@@ -4,7 +4,7 @@
 > 本文件是 **User App / Band Portal / Admin Console / backend-apis** 四方唯一的接口契约。
 > 三端前端以 `VITE_USE_MOCK=true` 的 mock 层自洽开发；backend-apis 按本文实现后，
 > 三端 `VITE_USE_MOCK=false` + `VITE_API_BASE` 一键切换联调。
-> Mock 层实现位于 `frontend/shared/mock/`，与下表一一对应。
+> Mock 层实现位于 `前端/shared/mock/`，与下表一一对应。
 
 ## 0.5 契约勘误（2026-08-13）
 
@@ -139,5 +139,5 @@
 ## 9. Mock / 联调切换
 
 - 各端 `.env`：`VITE_USE_MOCK=true`（默认开发）、`VITE_API_BASE=http://127.0.0.1:8000`
-- `frontend/shared/http.js`：`VITE_USE_MOCK==='true'` 时路由到 `frontend/shared/mock/index.js`，否则 `uni.request` 打真实 API。
+- `前端/shared/http.js`：`VITE_USE_MOCK==='true'` 时路由到 `前端/shared/mock/index.js`，否则 `uni.request` 打真实 API。
 - 后端就绪后：`VITE_USE_MOCK=false` 即切换真实 API；`/full /sync` 原有测试需回归全绿。

@@ -4,14 +4,14 @@
 
 ## 架构概览
 
-三个前端工程各自独立，但共享 `frontend/shared` 单一数据源（组件 / API 封装 / mock / 主题），由 `frontend/scripts/sync-shared.js` 同步到各端的 `common/` 目录。
+三个前端工程各自独立，但共享 `前端/shared` 单一数据源（组件 / API 封装 / mock / 主题），由 `前端/scripts/sync-shared.js` 同步到各端的 `common/` 目录。
 
 ```
 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
 │   user-app    │   │  band-portal  │   │ admin-console │
 │  普通用户端   │   │    乐队端     │   │   管理员端    │
 └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
-       └────────  frontend/shared（同步到各端 common/）────────┘
+       └────────  前端/shared（同步到各端 common/）────────┘
                               │ HTTP（REST + /full /sync 增量同步）
                      ┌────────▼────────┐
                      │   FastAPI 后端   │
@@ -33,7 +33,7 @@ live/
 │   ├── services/            # 业务与安全（passwords/token_manager/cache...）
 │   └── middleware/          # 错误归一、限流、CORS
 ├── database/migrations/     # PostgreSQL 迁移（V1 → V2 → V3）
-├── frontend/
+├── 前端/
 │   ├── shared/              # 三端共享单一数据源
 │   ├── user-app/            # 普通用户端（演出 / 场地 / 乐队 / 设置）
 │   ├── band-portal/         # 乐队端（Live 管理 / 拼盘 / 资料）
@@ -41,7 +41,8 @@ live/
 │   └── scripts/sync-shared.js
 ├── docs/
 │   ├── api_contract.md      # API 契约
-│   └── developer-guide.md   # 后端开发指南
+│   ├── developer-guide.md   # 后端开发指南
+│   └── 部署指南.md          # Linux 部署（git clone 后完整步骤）
 ├── requirements.txt         # 后端 Python 依赖
 └── .env.example             # 环境变量模板
 ```
@@ -77,9 +78,9 @@ uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 ### 3. 前端
 
-用 HBuilderX 分别打开 `frontend/user-app`、`frontend/band-portal`、`frontend/admin-console`，运行到浏览器或微信开发者工具。
+用 HBuilderX 分别打开 `前端/user-app`、`前端/band-portal`、`前端/admin-console`，运行到浏览器或微信开发者工具。
 
-修改 `frontend/shared` 后运行 `node frontend/scripts/sync-shared.js` 同步到三端。
+修改 `前端/shared` 后运行 `node 前端/scripts/sync-shared.js` 同步到三端。
 
 ## 环境变量
 
@@ -137,3 +138,4 @@ uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 - `docs/api_contract.md` — API 契约（含契约勘误）。
 - `docs/developer-guide.md` — 后端开发指南。
+- `docs/部署指南.md` — Linux 部署（`git clone` 后完整步骤）。

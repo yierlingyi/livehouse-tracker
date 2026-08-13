@@ -1,14 +1,14 @@
 # ---- Node / 构建产物 ----
 node_modules/
 unpackage/
-frontend/unpackage/
-frontend/*/unpackage/
-frontend/package-lock.json
+前端/unpackage/
+前端/*/unpackage/
+前端/package-lock.json
 
 # ---- 生成目录：三端 common/ 由 sync-shared 脚本从 shared/ 生成，禁止直接改/提交 ----
-frontend/user-app/common/
-frontend/band-portal/common/
-frontend/admin-console/common/
+前端/user-app/common/
+前端/band-portal/common/
+前端/admin-console/common/
 
 # ---- Python ----
 __pycache__/
