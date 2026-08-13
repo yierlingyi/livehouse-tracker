@@ -76,7 +76,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     if isinstance(detail, dict):
         code = detail.get("code", "UNKNOWN_ERROR")
         message = detail.get("message") or str(code)
-        status = detail.get("status_code") or ERROR_CODE_STATUS.get(code, exc.status_code)
+        status = detail.get("status_code") or exc.status_code
         return JSONResponse(
             status_code=status,
             content={"code": code, "message": message},

@@ -38,6 +38,7 @@ from backend.api.admin import router as admin_router
 from backend.api.auth import router as auth_router
 from backend.api.band import router as band_router
 from backend.api.bands import router as bands_router
+from backend.api.cities import router as cities_router
 from backend.api.cms import router as cms_router
 from backend.api.coop import router as coop_router
 from backend.api.full import router as full_router
@@ -223,6 +224,7 @@ app.include_router(coop_router)
 app.include_router(livehouse_router)
 app.include_router(bands_router)
 app.include_router(lives_extra_router)
+app.include_router(cities_router)
 app.include_router(cms_router)
 app.include_router(admin_router)
 app.include_router(upload_router)

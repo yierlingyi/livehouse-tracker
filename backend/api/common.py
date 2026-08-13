@@ -34,6 +34,9 @@ _DB_ERROR_MAP: Dict[str, tuple] = {
     "NOT_FOUND": (404, "NOT_FOUND", "资源不存在"),
     "USER_NOT_FOUND": (404, "USER_NOT_FOUND", "乐队账号不存在"),
     "CANNOT_INVITE_SELF": (400, "CANNOT_INVITE_SELF", "不能邀请自己"),
+    # 城市（V4）：DB 函数 RAISE 仅作兜底，契约码在 Python 层预判后返回
+    "CITY_TAKEN": (400, "CITIES_DUPLICATE", "该城市已存在"),
+    "CITY_NOT_FOUND": (404, "NOT_FOUND", "城市不存在"),
 }
 
 

@@ -45,7 +45,7 @@ def _to_params(body: dict) -> dict:
         raise _validation("请填写场地名称")
     return {
         "name": name,
-        "city": str(body.get("city") or "Tokyo").strip(),
+        "city": str(body.get("city") or "青岛").strip(),
         "address": str(body.get("address") or "").strip(),
         "phone": str(body.get("phone") or "").strip(),
         "image_url": str(body.get("image_url") or "").strip(),

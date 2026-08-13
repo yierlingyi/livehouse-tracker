@@ -75,7 +75,7 @@ FOR EACH ROW EXECUTE FUNCTION public.fn_update_timestamp();
 CREATE TABLE IF NOT EXISTS public.livehouses (
     id            BIGSERIAL PRIMARY KEY,
     name          VARCHAR(150) NOT NULL,
-    city          VARCHAR(50) NOT NULL DEFAULT 'Tokyo',
+    city          VARCHAR(50) NOT NULL DEFAULT '青岛',
     address       VARCHAR(255),
     phone         VARCHAR(50),
     image_url     VARCHAR(255),
@@ -796,7 +796,7 @@ BEGIN
     IF p_name IS NULL OR length(trim(p_name)) = 0 THEN
         RAISE EXCEPTION 'INVALID_VENUE_NAME';
     END IF;
-    IF p_city IS NULL OR length(trim(p_city)) = 0 THEN p_city := 'Tokyo'; END IF;
+    IF p_city IS NULL OR length(trim(p_city)) = 0 THEN p_city := '青岛'; END IF;
 
     IF p_id IS NOT NULL AND p_id > 0 THEN
         UPDATE public.livehouses SET
