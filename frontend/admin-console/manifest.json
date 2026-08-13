@@ -1,0 +1,27 @@
+{
+  "name": "乐队管理后台",
+  "appid": "",
+  "description": "乐队演出平台 — 管理后台（演出与乐队 / 场地管理 / 内容管理 / 系统设置）",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "vueVersion": "3",
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3
+  },
+  "h5": {
+    "title": "乐队管理后台",
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  }
+}

@@ -1,0 +1,64 @@
+/* ============================================================
+ * 共享主题设计 token（三端通用，单一事实源 frontend/shared/theme.css）
+ * 基础 token 写在 html；暗色覆盖写在 html[data-theme='dark']
+ * （theme.js applyTheme 把 data-theme 打在 document.documentElement/html 上，
+ *  必须与 CSS 选择器匹配——uni-app H5 中 page 编译为 uni-page-body，不映射 html。）
+ * 组件一律使用 var(--token, fallback)，fallback 保留亮色默认值
+ * ============================================================ */
+
+/* ---------- 亮色（默认）：token 定义在 html，向下级联到 body/uni-page-body/各 view ---------- */
+html {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-text: #1f2329;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-primary: #e5484d;
+  --color-border: #e5e7eb;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+
+  --radius: 16rpx;
+
+  --font-size-xs: 22rpx;
+  --font-size-sm: 26rpx;
+  --font-size-base: 28rpx;
+  --font-size-lg: 32rpx;
+  --font-size-xl: 36rpx;
+}
+
+/* ---------- 暗色（html[data-theme='dark'] 覆盖；theme.js 已在 html 上设 data-theme） ---------- */
+html[data-theme='dark'] {
+  --color-bg: #0f1115;
+  --color-surface: #171a20;
+  --color-text: #e8eaed;
+  --color-text-secondary: #9aa0a6;
+  --color-text-muted: #6b7280;
+  --color-primary: #f26a6e;
+  --color-border: #2a2f38;
+  --color-success: #22c55e;
+  --color-warning: #fbbf24;
+}
+
+/* ---------- page 引用 token 变量（背景/文字/字号随主题变化） ---------- */
+page {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 供组件直接引用的非令牌级兜底 */
+view,
+text,
+button,
+image {
+  box-sizing: border-box;
+}
+
+button::after {
+  border: none;
+}

@@ -13,6 +13,7 @@ Application settings（V4.4 Phase 4 集成）。
     RATE_LIMIT_FULL_PER_MINUTE / RATE_LIMIT_SYNC_PER_MINUTE  限流配额
     SCOPE_DEFAULT_DAYS              默认 90，/full 固定 scope 长度
     RETENTION_DAYS                  默认 30，CDC 日志保留天数
+    UPLOAD_DIR / UPLOAD_URL_PREFIX  文件上传落盘目录与 URL 前缀
 
 get_settings() 返回进程内缓存的单例；main.py / 各 service 惰性引用。
 """
@@ -59,6 +60,8 @@ class Settings:
     rate_limit_sync_per_minute: int = 60
     scope_default_days: int = 90
     retention_days: int = 30
+    upload_dir: str = "uploads"
+    upload_url_prefix: str = "/static/uploads"
 
     def __post_init__(self) -> None:
         if not self.database_url_primary:
@@ -101,6 +104,8 @@ class Settings:
             rate_limit_sync_per_minute=_env_int("RATE_LIMIT_SYNC_PER_MINUTE", 60),
             scope_default_days=_env_int("SCOPE_DEFAULT_DAYS", 90),
             retention_days=_env_int("RETENTION_DAYS", 30),
+            upload_dir=_env_str("UPLOAD_DIR", "uploads"),
+            upload_url_prefix=_env_str("UPLOAD_URL_PREFIX", "/static/uploads"),
         )
 
 

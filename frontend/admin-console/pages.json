@@ -1,0 +1,112 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "管理员登录"
+      }
+    },
+    {
+      "path": "pages/shows/index",
+      "style": {
+        "navigationBarTitleText": "演出与乐队"
+      }
+    },
+    {
+      "path": "pages/shows/live-edit",
+      "style": {
+        "navigationBarTitleText": "强制编辑 Live"
+      }
+    },
+    {
+      "path": "pages/bands/audit",
+      "style": {
+        "navigationBarTitleText": "审核详情"
+      }
+    },
+    {
+      "path": "pages/bands/edit",
+      "style": {
+        "navigationBarTitleText": "账号编辑"
+      }
+    },
+    {
+      "path": "pages/venues/index",
+      "style": {
+        "navigationBarTitleText": "场地管理"
+      }
+    },
+    {
+      "path": "pages/venues/edit",
+      "style": {
+        "navigationBarTitleText": "场地编辑"
+      }
+    },
+    {
+      "path": "pages/cms/index",
+      "style": {
+        "navigationBarTitleText": "内容管理"
+      }
+    },
+    {
+      "path": "pages/cms/groups",
+      "style": {
+        "navigationBarTitleText": "同好群管理"
+      }
+    },
+    {
+      "path": "pages/cms/sponsor",
+      "style": {
+        "navigationBarTitleText": "赞助管理"
+      }
+    },
+    {
+      "path": "pages/cms/project",
+      "style": {
+        "navigationBarTitleText": "项目声明管理"
+      }
+    },
+    {
+      "path": "pages/settings/index",
+      "style": {
+        "navigationBarTitleText": "系统设置"
+      }
+    },
+    {
+      "path": "pages/settings/admin-add",
+      "style": {
+        "navigationBarTitleText": "新增管理员"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "乐队管理后台",
+    "navigationBarBackgroundColor": "#1f2329",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "color": "#6b7280",
+    "selectedColor": "#e5484d",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/shows/index",
+        "text": "演出与乐队"
+      },
+      {
+        "pagePath": "pages/venues/index",
+        "text": "场地管理"
+      },
+      {
+        "pagePath": "pages/cms/index",
+        "text": "内容管理"
+      },
+      {
+        "pagePath": "pages/settings/index",
+        "text": "系统设置"
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+# ---- Node / 构建产物 ----
+node_modules/
+unpackage/
+frontend/unpackage/
+frontend/*/unpackage/
+frontend/package-lock.json
+
+# ---- 生成目录：三端 common/ 由 sync-shared 脚本从 shared/ 生成，禁止直接改/提交 ----
+frontend/user-app/common/
+frontend/band-portal/common/
+frontend/admin-console/common/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---- 环境变量（含数据库密码 / token 密钥，禁止提交）----
+.env
+.env.local
+.env.*.local
+
+# ---- 运行时上传目录（backend UPLOAD_DIR，默认 uploads/）----
+uploads/
+
+# ---- 编辑器 / 系统 ----
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- Claude Code 本地配置（会话会自建，禁止提交到公开仓库）----
+.claude/
+.superpowers/

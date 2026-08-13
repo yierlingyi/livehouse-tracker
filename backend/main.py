@@ -22,7 +22,9 @@ FastAPI 应用入口（V4.4 Phase 4 集成）。
     Redis 缓存 / 限流不参与 /sync 或一致性判定（全局原则 9）。
 """
 
+import json as _json
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
@@ -30,9 +32,19 @@ import asyncpg
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
+from backend.api.admin import router as admin_router
+from backend.api.auth import router as auth_router
+from backend.api.band import router as band_router
+from backend.api.bands import router as bands_router
+from backend.api.cms import router as cms_router
+from backend.api.coop import router as coop_router
 from backend.api.full import router as full_router
+from backend.api.livehouse import router as livehouse_router
+from backend.api.lives_extra import router as lives_extra_router
 from backend.api.sync import router as sync_router
+from backend.api.upload import router as upload_router
 from backend.config import get_settings
 from backend.middleware.error_handler import register_error_handlers
 from backend.middleware.request_validator import register_request_validator
@@ -51,6 +63,21 @@ primary_pool: Optional[asyncpg.Pool] = None
 replica_pool: Optional[asyncpg.Pool] = None
 
 
+async def _init_jsonb(conn: asyncpg.Connection) -> None:
+    """为 jsonb 参数注册 Python 对象编解码。
+
+    新增 REST 接口以 JSON 数组/对象作为 jsonb 参数传给 SECURITY DEFINER 函数，
+    asyncpg 默认只接受 str/bytes；这里在连接上注册 json.dumps / json.loads。
+    不影响 /full /sync（其查询不传 jsonb 参数）。
+    """
+    await conn.set_type_codec(
+        "jsonb",
+        encoder=_json.dumps,
+        decoder=_json.loads,
+        schema="pg_catalog",
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global primary_pool, replica_pool
@@ -63,6 +90,7 @@ async def lifespan(app: FastAPI):
         settings.database_url_primary,
         min_size=settings.db_pool_min,
         max_size=settings.db_pool_max,
+        init=_init_jsonb,
     )
     logger.info(
         "primary pool ready (min=%s max=%s)",
@@ -75,6 +103,7 @@ async def lifespan(app: FastAPI):
             settings.database_url_replica,
             min_size=settings.db_pool_min,
             max_size=settings.db_pool_max,
+            init=_init_jsonb,
         )
         logger.info("replica pool ready")
     else:
@@ -111,12 +140,26 @@ async def get_replica_db() -> AsyncGenerator[asyncpg.Connection, None]:
 
 app = FastAPI(title="Band Live API", version="4.4.0", lifespan=lifespan)
 
-# --- CORS（H5 开发期跨域；生产由 nginx 反代同源） ---
+# --- CORS（三端 H5 开发期跨域；生产由 nginx 反代同源） ---
+# 三端开发端口：User App 5173 / Band Portal 5174 / Admin Console 5175；
+# 另有 HBuilderX 内置浏览器走 8080。允许 GET/POST/PATCH/PUT/DELETE。
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:8080"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        # 生产示例（按需开放）：
+        # "https://live.example.com",
+        # "https://admin.example.com",
+    ],
     allow_credentials=False,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -161,6 +204,25 @@ async def rate_limit_middleware(request: Request, call_next):
 # --- 请求校验（后注册 → 外层 → 先执行） ---
 register_request_validator(app)
 
+# --- 上传静态目录（UPLOAD_DIR，默认 uploads/） ---
+_settings_upload = get_settings()
+_upload_dir = _settings_upload.upload_dir
+os.makedirs(_upload_dir, exist_ok=True)
+app.mount(
+    _settings_upload.upload_url_prefix,
+    StaticFiles(directory=_upload_dir),
+    name="uploads",
+)
+
 # --- 路由挂载 ---
 app.include_router(full_router)
 app.include_router(sync_router)
+app.include_router(auth_router)
+app.include_router(band_router)
+app.include_router(coop_router)
+app.include_router(livehouse_router)
+app.include_router(bands_router)
+app.include_router(lives_extra_router)
+app.include_router(cms_router)
+app.include_router(admin_router)
+app.include_router(upload_router)

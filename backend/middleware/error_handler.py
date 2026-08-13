@@ -37,12 +37,51 @@ ERROR_CODE_STATUS = {
     "SYNC_CURSOR_EXPIRED": 409,
     "RATE_LIMITED": 429,
     "SYNC_INVARIANT_BROKEN": 500,
+    # 三端扩展业务错误码（api_contract.md §0 错误统一 {code, message}）
+    "UNAUTHORIZED": 401,
+    "FORBIDDEN": 403,
+    "NOT_FOUND": 404,
+    "INVALID_CREDENTIALS": 400,
+    "PENDING": 403,
+    "ACCOUNT_DISABLED": 403,
+    "ACCOUNT_EXISTS": 409,
+    "USER_NOT_FOUND": 404,
+    "CANNOT_INVITE_SELF": 400,
+    "VALIDATION_ERROR": 422,
+    "INVALID_ACTION": 400,
+    "INVALID_STATUS": 400,
+    "INVALID_TITLE": 400,
+    "INVALID_LIVE_DATE": 400,
+    "INVALID_LIVEHOUSE": 400,
+    "INVALID_VENUE_NAME": 400,
+    "INVALID_PLATFORM": 400,
+    "INVALID_GROUP_ID": 400,
+    "INVALID_USERNAME": 400,
+    "INVALID_PASSWORD": 400,
+    "INVALID_BAND_NAME": 400,
+    "INVALID_BANDS": 400,
+    "UNKNOWN_BAND_ID": 400,
+    "TOO_MANY_BANDS": 400,
 }
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """HTTPException 处理器：按 detail 错误码映射为 {code, message} JSON。"""
+    """HTTPException 处理器：按 detail 错误码映射为 {code, message} JSON。
+
+    detail 支持两种形式：
+        - str：契约错误码（在 ERROR_CODE_STATUS 中映射状态码，message=code）。
+        - dict {code, message[, status_code]}：完整业务错误，直接透出。
+    """
     detail = exc.detail
+    if isinstance(detail, dict):
+        code = detail.get("code", "UNKNOWN_ERROR")
+        message = detail.get("message") or str(code)
+        status = detail.get("status_code") or ERROR_CODE_STATUS.get(code, exc.status_code)
+        return JSONResponse(
+            status_code=status,
+            content={"code": code, "message": message},
+            headers=exc.headers,
+        )
     if isinstance(detail, str) and detail in ERROR_CODE_STATUS:
         return JSONResponse(
             status_code=ERROR_CODE_STATUS[detail],

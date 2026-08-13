@@ -1,7 +1,7 @@
 # 乐队演出查看小程序 — 开发者指南
 
 > 面向后端 / 前端开发者和 DevOps / 运维人员。
-> 本文档对应仓库根目录下的技术基线《技术实现计划书 V4.4 生产基线版.txt》（下称 V4.4）。
+> 本文档对应 V4.4 生产基线技术方案（下称 V4.4）。
 > 后端接口契约见 `backend/contracts/`（`full.openapi.yaml` / `sync.openapi.yaml` / `shared.json`）。
 
 ---
@@ -92,7 +92,6 @@ flowchart LR
 |---|---|
 | `database/migrations/V1__schema.sql` | 表结构 + 生成列 + 索引 + 触发器 + CDC 三张表 + 角色 + `safe_update_live_bands` SECURITY DEFINER 函数 |
 | `database/migrations/V2__permissions.sql` | 角色级对象权限：`api_role` 只读、`app_definer` 最小权限、`migration_role` 全量 |
-| `database/tests/schema_test.sql` | Schema / 权限验收 SQL 脚本（`psql` 直接执行，逐项输出 PASS） |
 | `database/docs/security_review.md` | 权限模型安全评审记录 |
 | `backend/main.py` | FastAPI 入口：lifespan 建连接池、注入 token 密钥、挂载中间件与路由 |
 | `backend/config.py` | `Settings` 数据类，全部敏感值从环境变量读取 |
@@ -113,7 +112,6 @@ flowchart LR
 | `frontend/pages/city-switch.vue` | 城市选择 + 首次同步进度（`CITIES` 列表在此配置） |
 | `frontend/pages/detail.vue` | 演出详情 |
 | `frontend/components/SyncStatus.vue` / `ErrorPage.vue` | 同步状态指示 / 错误重试组件 |
-| `tests/integration/test_e2e_sync.py` | 端到端一致性测试：`/full(snapshot_cursor) + /sync(after)` == 服务端 Scope 状态 |
 
 ---
 
@@ -122,23 +120,13 @@ flowchart LR
 | 组件 | 版本 | 说明 |
 |---|---|---|
 | Python | 3.11+ | 后端运行时 |
-| PostgreSQL | 16 | 必须为真实数据库（测试 / 迁移需要超级用户连接） |
+| PostgreSQL | 16 | 必须为真实数据库（迁移需要超级用户连接） |
 | Redis | 7 | 可选，用于 `/full` 热点缓存与限流；不配置则内存降级 |
 | Node.js | 18+ | 仅前端 CLI 工具链需要（见 4.3） |
 | HBuilderX | 4.x（含 Vue3 / uni-app 编译器） | 前端编译（H5 / 微信小程序） |
 | 微信开发者工具 | 最新 | 运行小程序目标 |
 
-Python 依赖（仓库未提供 `requirements.txt`，部署时按需安装）：
-
-```text
-fastapi
-uvicorn
-asyncpg
-redis
-httpx            # 测试用（ASGITransport 驱动 FastAPI app）
-pytest
-pytest-asyncio   # >= 0.24，loop scope 固定为 session（见 pytest.ini）
-```
+Python 依赖（见仓库根目录 `requirements.txt`，`pip install -r requirements.txt` 安装）。
 
 ---
 
@@ -154,10 +142,7 @@ createdb app_db
 # 2. 执行迁移（连接角色需要超级用户权限：迁移要 CREATE ROLE、REVOKE ALL ON DATABASE）
 psql -d app_db -f database/migrations/V1__schema.sql
 psql -d app_db -f database/migrations/V2__permissions.sql
-
-# 3. 验证 schema 与权限（逐项输出 PASS；测试 4/5 的 SET ROLE 检查需要
-#    以超级用户或 api_role 成员身份执行）
-psql -d app_db -f database/tests/schema_test.sql
+psql -d app_db -f database/migrations/V3__platform.sql
 ```
 
 迁移产物一览（V1）：
@@ -173,9 +158,8 @@ psql -d app_db -f database/tests/schema_test.sql
 ### 4.2 后端部署
 
 ```bash
-# 1. 安装依赖
-cd backend
-pip install fastapi uvicorn asyncpg redis httpx
+# 1. 安装依赖（仓库根目录执行）
+pip install -r requirements.txt
 
 # 2. 配置环境变量（建议写入 .env 或由进程管理器注入）
 export DATABASE_URL_PRIMARY="postgresql://user:pass@localhost:5432/app_db"
@@ -392,42 +376,9 @@ npm run build:mp-weixin
 | `VITE_API_BASE` | Vite CLI 环境变量，API 基础地址，优先级最高 |
 | `VUE_APP_API_BASE` | HBuilderX / 旧版 CLI 环境变量，API 基础地址 |
 
-测试专用：
-
-| 环境变量 | 说明 |
-|---|---|
-| `TEST_DATABASE_URL` | 测试库连接串（**必须为真实 PostgreSQL，连接角色需为超级用户**）；未设置时回退 `DATABASE_URL_PRIMARY` |
-
 ---
 
-## 8. 测试
-
-`pytest.ini` 已配置 `testpaths = backend/tests tests/integration` 与 asyncio session loop scope，测试从**仓库根目录**运行。
-
-```bash
-# 1. 准备测试数据库（测试会 DROP SCHEMA public CASCADE 并重放 V1/V2，请用独立库）
-createdb app_db_test
-
-# 2. 设置测试数据库（连接角色应为超级用户，见 backend/tests/conftest.py）
-export TEST_DATABASE_URL="postgresql://user:pass@localhost:5432/app_db_test"
-
-# 3. 运行全部测试（当前共 46 个用例）
-pytest -v
-
-# 4. 只运行端到端一致性测试
-pytest tests/integration/test_e2e_sync.py -v
-```
-
-说明：
-
-- conftest 会自动把 `DATABASE_URL_PRIMARY` 指向测试库、调高限流配额、注入测试 token 密钥，无需手动干预；
-- `_schema`（session 级 autouse fixture）一次性重建 schema 并应用 V1/V2 迁移；
-- `tests/integration/test_e2e_sync.py` 完整复现客户端首次同步，验证 `/full(snapshot_cursor) + /sync(after)` 的结果等于服务端 high_water 下的 Scope 状态；
-- 若只做静态检查（不连库），可用 `pytest --collect-only -q` 查看用例清单。
-
----
-
-## 9. 常见问题
+## 8. 常见问题
 
 **Q: 客户端长时间离线后打开，数据不一致怎么办？**
 A: 服务端对 CDC 日志做保留（`RETENTION_DAYS`，默认 30 天）。离线过久导致本地 cursor 低于 `retention_floor_version` 时，`/sync` 返回 409 `SYNC_CURSOR_EXPIRED`。客户端 `handleSyncError` 会自动执行 `clearAll()` + 重新 `/full`，无需人工干预。Cursor 过期不计入攻击，只引导重新全量同步。
@@ -446,7 +397,7 @@ A: 这是数据库生成列 `COALESCE(start_time, TIME '23:59:59')`。它保证 
 
 ---
 
-## 10. 运维建议
+## 9. 运维建议
 
 1. **读写分离限制**：`/full` 与 `/sync` 必须走 Primary（V4.4 全局原则 1）。副本（`DATABASE_URL_REPLICA`）只用于非一致性读，不要对同步接口做路由切换。
 2. **保留清理任务**：`services/retention_cleaner.py` 的 `clean_expired_logs(conn, retention_days)` 建议用 cron 每天执行一次，推进 `sync_retention_state.retention_floor_version`。任务本身是单条原子 SQL，重复运行幂等。
@@ -454,4 +405,4 @@ A: 这是数据库生成列 `COALESCE(start_time, TIME '23:59:59')`。它保证 
 4. **热门城市缓存**：为访问量大的城市开启 `REDIS_URL`，`/full` 首页（`cache.py`）自动按 `full:lives:v1:{city}:{scope}:{token_hash}` 缓存并带 TTL jitter。`/sync` 永不缓存。
 5. **反向代理与限流**：部署在可信反向代理（Nginx / Caddy）之后，限流依赖 `X-Forwarded-For` / `X-Real-IP` 提取客户端 IP，代理必须正确改写这些头，否则会被绕过或误伤。
 6. **密钥管理**：`TOKEN_SECRET` 与数据库口令用 KMS / 密钥管理系统注入环境，禁止硬编码、禁止提交到仓库；`token_manager.set_secret()` 在应用启动时注入。
-7. **契约先行**：前后端以 `backend/contracts/` 下的 OpenAPI / JSON Schema 为唯一契约。修改字段必须同步更新契约与 `tests/integration/test_e2e_sync.py` 等一致性测试。
+7. **契约先行**：前后端以 `backend/contracts/` 下的 OpenAPI / JSON Schema 为唯一契约。修改字段必须同步更新契约。

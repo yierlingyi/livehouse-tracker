@@ -39,10 +39,19 @@ __all__ = [
     "InvalidPageTokenError",
     "PageTokenExpiredError",
     "DEFAULT_TTL_MINUTES",
+    "sign_auth_token",
+    "verify_auth_token",
+    "InvalidAuthTokenError",
+    "AuthTokenExpiredError",
+    "AUTH_TOKEN_TTL_SECONDS",
 ]
 
 TOKEN_VERSION = 1
 DEFAULT_TTL_MINUTES = 30
+
+# 认证 token（v=2）：短时有效，载荷 {v:2, aid, role, exp}。
+AUTH_TOKEN_VERSION = 2
+AUTH_TOKEN_TTL_SECONDS = 24 * 3600
 
 # Token 必填字段（openapi 契约 components.schemas.PageToken.required）
 _REQUIRED_FIELDS = (
@@ -65,6 +74,14 @@ class InvalidPageTokenError(ValueError):
 
 class PageTokenExpiredError(ValueError):
     """Token 已过期（exp < 当前时间）。"""
+
+
+class InvalidAuthTokenError(ValueError):
+    """认证 token 非法：格式错误 / 签名不匹配 / v 非 2 / 字段缺失或类型错误。"""
+
+
+class AuthTokenExpiredError(ValueError):
+    """认证 token 已过期（exp < 当前时间）。"""
 
 
 def set_secret(secret: str) -> None:
@@ -219,3 +236,74 @@ def build_first_page_token(
         "exp": int(time.time()) + ttl_minutes * 60,
     }
     return sign_token(payload)
+
+
+def sign_auth_token(
+    account_id: int, role: str, ttl_seconds: int = AUTH_TOKEN_TTL_SECONDS
+) -> str:
+    """签发认证 token（v=2，HMAC-SHA256 签名）。
+
+    载荷：{v:2, aid: 账号 id, role: 'band'|'admin', exp}。
+    复用 v=1 的签名/编码路径，仅版本与字段不同。
+    """
+    payload = {
+        "v": AUTH_TOKEN_VERSION,
+        "aid": int(account_id),
+        "role": str(role),
+        "exp": int(time.time()) + ttl_seconds,
+    }
+    return sign_token(payload)
+
+
+def verify_auth_token(token_str: str) -> Dict[str, Any]:
+    """验证认证 token，返回载荷 dict {aid, role, exp}。
+
+    异常：
+        InvalidAuthTokenError — 格式错误 / 签名不匹配 / v 非 2 / 字段缺失或类型错误
+        AuthTokenExpiredError — exp 已过
+
+    验签顺序与 v=1 一致：先验签，再解析，再校验版本/字段/过期。
+    """
+    if not isinstance(token_str, str) or not token_str:
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    try:
+        decoded = _b64url_decode(token_str)
+    except Exception:
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    if b"." not in decoded:
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    payload_bytes, sig_bytes = decoded.rsplit(b".", 1)
+    if not payload_bytes or not sig_bytes:
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    expected_sig = _sign(payload_bytes)
+    if not hmac.compare_digest(sig_bytes, expected_sig):
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    try:
+        payload = json.loads(payload_bytes.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    if not isinstance(payload, dict):
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    if payload.get("v") != AUTH_TOKEN_VERSION:
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    if not isinstance(payload.get("aid"), int) or not isinstance(
+        payload.get("role"), str
+    ):
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    exp = payload.get("exp")
+    if not isinstance(exp, int):
+        raise InvalidAuthTokenError("INVALID_AUTH_TOKEN")
+
+    if exp < int(time.time()):
+        raise AuthTokenExpiredError("AUTH_TOKEN_EXPIRED")
+
+    return {"aid": payload["aid"], "role": payload["role"], "exp": exp}
