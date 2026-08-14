@@ -64,6 +64,7 @@ live/
 psql -d app_db -f database/migrations/V1__schema.sql
 psql -d app_db -f database/migrations/V2__permissions.sql
 psql -d app_db -f database/migrations/V3__platform.sql
+psql -d app_db -f database/migrations/V4__cities.sql   # 运行时城市表（城市选择从此读取）
 ```
 
 ### 2. 后端

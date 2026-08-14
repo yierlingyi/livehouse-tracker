@@ -15,13 +15,16 @@
 #
 # 前提（重要）：
 #   * DATABASE_URL_PRIMARY 的连接账号必须是 PostgreSQL 超级用户。
-#     V1/V2/V3 迁移含 CREATE ROLE / REVOKE ALL ON DATABASE app_db /
+#     V1/V2/V3/V4 迁移含 CREATE ROLE / REVOKE ALL ON DATABASE app_db /
 #     ALTER FUNCTION ... OWNER TO app_definer，均需超级用户或数据库 owner 权限。
 #   * DATABASE_URL_PRIMARY 的库名必须为 app_db（迁移 V1/V2 硬编码该名称）。
 #
 # 幂等性：
 #   * 数据库已存在 → 跳过建库；不存在 → CREATE DATABASE app_db。
-#   * run.sh 内 V1 检测到 public.lives 已存在则跳过；V2/V3 为幂等设计，可重复执行。
+#   * run.sh 内 V1 检测到 public.lives 已存在则跳过；V2/V3/V4 为幂等设计，可重复执行。
+#
+#   * 默认前台运行；设置 DAEMON=1 则后台常驻（透传给 run.sh）：
+#       DAEMON=1 bash scripts/start.sh
 # ============================================================
 set -euo pipefail
 
@@ -83,7 +86,7 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "    psql \"${server_dsn}\" -tAc \"SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'\""
   echo ">> [DRY-RUN] 步骤② 若检测到库不存在，将执行："
   echo "    psql \"${server_dsn}\" -v ON_ERROR_STOP=1 -c \"CREATE DATABASE ${DB_NAME}\""
-  echo ">> [DRY-RUN] 步骤③④ 将委托执行：bash scripts/run.sh（迁移 V1/V2/V3 + uvicorn 启动）"
+  echo ">> [DRY-RUN] 步骤③④ 将委托执行：bash scripts/run.sh（迁移 V1/V2/V3/V4 + uvicorn 启动）"
   echo ">> [DRY-RUN] 注意：以上命令含数据库口令，请勿在公开场合泄露。"
   exit 0
 fi
@@ -120,7 +123,7 @@ else
 fi
 
 # ---- 5) 步骤③应用迁移 / 步骤④启动 API（复用 run.sh）----
-echo ">> [3/4] 应用迁移 V1/V2/V3（V1 检测 public.lives 已存在则跳过；V2/V3 幂等）"
+echo ">> [3/4] 应用迁移 V1/V2/V3/V4（V1 检测 public.lives 已存在则跳过；V2/V3/V4 幂等）"
 echo ">> [4/4] 启动 API（uvicorn backend.main:app）"
 echo ">> 委托 scripts/run.sh 执行上述两步 ..."
 exec bash scripts/run.sh
